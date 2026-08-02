@@ -58,7 +58,26 @@ async function fetchMergedPrs(username: string) {
 	return prs;
 }
 
-const mergedPrs = (await fetchMergedPrs(USERNAME))
+async function fetchRepoLanguages(repos: string[]) {
+	const languages: Record<string, string> = {};
+	let index = 0;
+	async function worker() {
+		while (index < repos.length) {
+			const repo = repos[index++];
+			try {
+				const data = await fetchJson(`https://api.github.com/repos/${repo}`);
+				languages[repo] = data.language ?? 'Other';
+			} catch {
+				languages[repo] = 'Other';
+			}
+		}
+	}
+	const workers = Array.from({ length: Math.min(8, repos.length) }, worker);
+	await Promise.all(workers);
+	return languages;
+}
+
+const basePrs = (await fetchMergedPrs(USERNAME))
 	.filter((pr) => pr.repository_url.split('/repos/')[1].split('/')[0] !== USERNAME)
 	.map((pr) => ({
 		repo: pr.repository_url.replace('https://api.github.com/repos/', ''),
@@ -67,7 +86,12 @@ const mergedPrs = (await fetchMergedPrs(USERNAME))
 		url: pr.html_url,
 		mergedAt: pr.pull_request?.merged_at ?? pr.closed_at ?? pr.updated_at,
 		body: pr.body,
-	}))
+	}));
+
+const repoLanguages = await fetchRepoLanguages([...new Set(basePrs.map((pr) => pr.repo))]);
+
+const mergedPrs = basePrs
+	.map((pr) => ({ ...pr, language: repoLanguages[pr.repo] ?? 'Other' }))
 	.sort((a, b) => new Date(b.mergedAt).getTime() - new Date(a.mergedAt).getTime());
 
 const repoCount = new Set(mergedPrs.map((pr) => pr.repo)).size;
@@ -80,6 +104,15 @@ const repoGroups = Object.entries(
 )
 	.map(([repo, prs]) => ({ repo, prs, count: prs.length }))
 	.sort((a, b) => b.count - a.count);
+
+const languageGroups = Object.entries(
+	mergedPrs.reduce((acc, pr) => {
+		(acc[pr.language] ??= []).push(pr);
+		return acc;
+	}, {} as Record<string, typeof mergedPrs>),
+)
+	.map(([language, prs]) => ({ language, prs, count: prs.length }))
+	.sort((a, b) => b.count - a.count || a.language.localeCompare(b.language));
 
 function formatDate(iso: string) {
 	return new Date(iso).toLocaleDateString('en-US', {
@@ -104,6 +137,7 @@ function formatDate(iso: string) {
 		<div class="toggle" role="group" aria-label="View">
 			<button data-view="timeline" aria-pressed="true">Timeline</button>
 			<button data-view="grouped" aria-pressed="false">By repository</button>
+			<button data-view="language" aria-pressed="false">By language</button>
 		</div>
 
 		{mergedPrs.length > 0 ? (
@@ -150,6 +184,26 @@ function formatDate(iso: string) {
 					</div>
 				))}
 			</section>
+
+			<section id="language-view" hidden>
+				{languageGroups.map((group) => (
+					<div class="group">
+						<h2>
+							<span class="language">{group.language}</span>
+							<span class="group-count">{group.count}</span>
+						</h2>
+						<ul>
+							{group.prs.map((pr) => (
+								<li>
+									<a href={pr.url}>{pr.title}</a>
+									<span class="detail"> {pr.repo} #{pr.number}</span>
+									<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
+								</li>
+							))}
+						</ul>
+					</div>
+				))}
+			</section>
 		) : (
 			<p class="empty">No merged pull requests found in other repositories.</p>
 		)}
@@ -161,16 +215,16 @@ function formatDate(iso: string) {
 	const views = {
 		timeline: document.getElementById('timeline-view'),
 		grouped: document.getElementById('grouped-view'),
+		language: document.getElementById('language-view'),
 	};
 
 	function apply(view: string) {
 		for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.view === view));
-		views.timeline.hidden = view !== 'timeline';
-		views.grouped.hidden = view !== 'grouped';
+		for (const [key, el] of Object.entries(views)) el.hidden = key !== view;
 	}
 
 	const initial = new URLSearchParams(location.search).get('view');
-	if (initial === 'grouped' || initial === 'timeline') {
+	if (initial === 'grouped' || initial === 'timeline' || initial === 'language') {
 		apply(initial);
 	} else {
 		apply('timeline');
@@ -266,6 +320,12 @@ function formatDate(iso: string) {
 		background: #eef2ff;
 		border-radius: 999px;
 		padding: 2px 8px;
+	}
+
+	.language {
+		font-size: 15px;
+		font-weight: 600;
+		color: #4f46e5;
 	}
 
 	.group ul {
