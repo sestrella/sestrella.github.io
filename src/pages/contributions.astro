@@ -6,7 +6,7 @@ import TimelineList from '../components/TimelineList.astro';
 import { loadContributions } from '../lib/contributions';
 
 const { mergedPrs, repoCount, years } = await loadContributions();
-const yearFilters = years.slice(0, 5).map(({ year }) => ({
+const yearFilters = years.map(({ year }) => ({
 	label: String(year),
 	href: `#year-${year}`,
 }));
