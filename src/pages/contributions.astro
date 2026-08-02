@@ -3,17 +3,6 @@ import Layout from '../layouts/Layout.astro';
 
 const USERNAME = process.env.GITHUB_USERNAME ?? 'sestrella';
 
-const CONTRIBUTION_TYPES = new Set([
-	'PushEvent',
-	'PullRequestEvent',
-	'IssuesEvent',
-	'IssueCommentEvent',
-	'PullRequestReviewEvent',
-	'PullRequestReviewCommentEvent',
-	'CommitCommentEvent',
-	'DiscussionEvent',
-]);
-
 const headers = {
 	Accept: 'application/vnd.github+json',
 	'X-GitHub-Api-Version': '2022-11-28',
@@ -23,11 +12,12 @@ if (process.env.GITHUB_TOKEN) {
 	headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
 }
 
-async function fetchAllEvents(username: string) {
-	const events = [];
+async function fetchMergedPrs(username: string) {
+	const prs = [];
 	for (let page = 1; page <= 10; page++) {
+		const query = `author:${username} is:pr is:merged`;
 		const res = await fetch(
-			`https://api.github.com/users/${username}/events/public?per_page=100&page=${page}`,
+			`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=100&page=${page}`,
 			{ headers },
 		);
 		if (!res.ok) {
@@ -35,128 +25,28 @@ async function fetchAllEvents(username: string) {
 				`GitHub API request failed (${res.status}). Set GITHUB_TOKEN for a higher rate limit.`,
 			);
 		}
-		const batch = await res.json();
+		const data = await res.json();
+		const batch = data.items ?? [];
 		if (batch.length === 0) break;
-		events.push(...batch);
-		if (batch.length < 100) break;
+		prs.push(...batch);
+		if (prs.length >= data.total_count) break;
 	}
-	return events;
+	return prs;
 }
 
-function capitalize(s: string) {
-	return s ? s[0].toUpperCase() + s.slice(1) : '';
-}
+const mergedPrs = (await fetchMergedPrs(USERNAME))
+	.filter((pr) => pr.repository_url.split('/repos/')[1].split('/')[0] !== USERNAME)
+	.map((pr) => ({
+		repo: pr.repository_url.replace('https://api.github.com/repos/', ''),
+		number: pr.number,
+		title: pr.title,
+		url: pr.html_url,
+		mergedAt: pr.pull_request?.merged_at ?? pr.closed_at ?? pr.updated_at,
+		body: pr.body,
+	}))
+	.sort((a, b) => new Date(b.mergedAt).getTime() - new Date(a.mergedAt).getTime());
 
-type Contribution = {
-	kind: string;
-	title: string;
-	detail: string;
-	repo: string;
-	url: string;
-	date: string;
-};
-
-function describe(event: any): Contribution | null {
-	const repo = event.repo.name;
-	const repoUrl = `https://github.com/${repo}`;
-	const payload = event.payload ?? {};
-	const base = { repo, date: event.created_at };
-	const num = payload.number ?? payload.pull_request?.number ?? payload.issue?.number;
-
-	switch (event.type) {
-		case 'PushEvent': {
-			const count = payload.commits?.length ?? 0;
-			const branch = payload.ref?.replace('refs/heads/', '');
-			return {
-				...base,
-				kind: 'Commit',
-				title: `Pushed ${count} commit${count === 1 ? '' : 's'}`,
-				detail: branch ? `to ${branch}` : '',
-				url: repoUrl,
-			};
-		}
-		case 'PullRequestEvent':
-			return {
-				...base,
-				kind: 'Pull request',
-				title: `${capitalize(payload.action ?? 'updated')} pull request`,
-				detail: num ? `#${num}` : '',
-				url: num ? `https://github.com/${repo}/pull/${num}` : repoUrl,
-			};
-		case 'IssuesEvent': {
-			const title = payload.issue?.title;
-			return {
-				...base,
-				kind: 'Issue',
-				title: `${capitalize(payload.action ?? 'updated')} issue`,
-				detail: num ? `#${num}${title ? ` · ${title}` : ''}` : title ?? '',
-				url: payload.issue?.html_url ?? (num ? `https://github.com/${repo}/issues/${num}` : repoUrl),
-			};
-		}
-		case 'IssueCommentEvent': {
-			const issue = payload.issue ?? {};
-			const isPr = Boolean(issue.pull_request);
-			return {
-				...base,
-				kind: 'Comment',
-				title: `Commented on ${isPr ? 'pull request' : 'issue'}`,
-				detail: num ? `#${num}${issue.title ? ` · ${issue.title}` : ''}` : issue.title ?? '',
-				url: payload.comment?.html_url ?? repoUrl,
-			};
-		}
-		case 'PullRequestReviewEvent': {
-			const state = payload.review?.state;
-			return {
-				...base,
-				kind: 'Review',
-				title: 'Reviewed pull request',
-				detail: num ? `#${num}${state ? ` · ${state}` : ''}` : state ?? '',
-				url: num ? `https://github.com/${repo}/pull/${num}#pullrequestreview-${payload.review?.id ?? ''}` : repoUrl,
-			};
-		}
-		case 'PullRequestReviewCommentEvent': {
-			const path = payload.comment?.path ? ` · ${payload.comment.path}` : '';
-			return {
-				...base,
-				kind: 'Review',
-				title: 'Commented on pull request',
-				detail: num ? `#${num}${path}` : path.replace(' · ', ''),
-				url: payload.comment?.html_url ?? repoUrl,
-			};
-		}
-		case 'CommitCommentEvent':
-			return {
-				...base,
-				kind: 'Comment',
-				title: 'Commented on a commit',
-				detail: '',
-				url: payload.comment?.html_url ?? repoUrl,
-			};
-		case 'DiscussionEvent':
-			return {
-				...base,
-				kind: 'Discussion',
-				title: 'Started a discussion',
-				detail: payload.discussion?.title ?? '',
-				url: payload.discussion?.html_url ?? repoUrl,
-			};
-		default:
-			return null;
-	}
-}
-
-const unique = new Map<string, any>();
-for (const event of await fetchAllEvents(USERNAME)) {
-	unique.set(event.id, event);
-}
-
-const contributions = [...unique.values()]
-	.map(describe)
-	.filter((c): c is Contribution => Boolean(c))
-	.filter((c) => c.repo.split('/')[0] !== USERNAME)
-	.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-const repoCount = new Set(contributions.map((c) => c.repo)).size;
+const repoCount = new Set(mergedPrs.map((pr) => pr.repo)).size;
 
 function formatDate(iso: string) {
 	return new Date(iso).toLocaleDateString('en-US', {
@@ -171,31 +61,37 @@ function formatDate(iso: string) {
 	<main>
 		<h1>Open Source Contributions</h1>
 		<p class="sub">
-			Timeline of activity in other people's repositories, pulled from the GitHub API at build
+			Merged pull requests in other people's repositories, pulled from the GitHub API at build
 			time.
 		</p>
 		<p class="count">
-			{contributions.length} contributions across {repoCount} repositories
+			{mergedPrs.length} merged pull requests across {repoCount} repositories
 		</p>
 
-		{contributions.length > 0 ? (
+		{mergedPrs.length > 0 ? (
 			<ol class="timeline">
-				{contributions.map((c) => (
+				{mergedPrs.map((pr) => (
 					<li>
-						<span class="badge">{c.kind}</span>
+						<span class="badge">Merged PR</span>
 						<div class="body">
-							<a class="repo" href={`https://github.com/${c.repo}`}>{c.repo}</a>
+							<a class="repo" href={`https://github.com/${pr.repo}`}>{pr.repo}</a>
 							<p class="desc">
-								<a href={c.url}>{c.title}</a>
-								{c.detail && <span class="detail"> · {c.detail}</span>}
+								<a href={pr.url}>{pr.title}</a>
+								<span class="detail"> · #{pr.number}</span>
 							</p>
-							<time datetime={c.date}>{formatDate(c.date)}</time>
+							{pr.body && (
+								<p class="snippet">
+									{pr.body.replace(/\s+/g, ' ').trim().slice(0, 140)}
+									{pr.body.length > 140 ? '…' : ''}
+								</p>
+							)}
+							<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
 						</div>
 					</li>
 				))}
 			</ol>
 		) : (
-			<p class="empty">No external contributions found.</p>
+			<p class="empty">No merged pull requests found in other repositories.</p>
 		)}
 	</main>
 </Layout>
@@ -307,6 +203,14 @@ function formatDate(iso: string) {
 
 	.detail {
 		color: #6b7280;
+	}
+
+	.snippet {
+		margin: 2px 0 0;
+		color: #6b7280;
+		font-size: 14px;
+		line-height: 1.45;
+		overflow-wrap: anywhere;
 	}
 
 	time {
