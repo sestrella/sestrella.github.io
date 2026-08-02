@@ -24,6 +24,7 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 			</nav>
 		</header>
 		<slot />
+		<footer>© {new Date().getFullYear()} Sebastián Estrella</footer>
 	</body>
 </html>
 
@@ -53,5 +54,15 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 
 	nav a:hover {
 		text-decoration: underline;
+	}
+
+	footer {
+		margin-top: 48px;
+		padding: 24px;
+		border-top: 1px solid #e5e7eb;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+		font-size: 14px;
+		color: #6b7280;
+		text-align: center;
 	}
 </style>
