@@ -22,9 +22,16 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 				<a href="/">sestrella</a>
 				<a href="/contributions">OSS Contributions</a>
 			</nav>
+			<nav class="social" aria-label="Social media">
+				<a href="https://www.linkedin.com/in/sestrella/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+				<a href="https://github.com/sestrella/" target="_blank" rel="noopener noreferrer">GitHub</a>
+				<a href="https://x.com/sestrella_h" target="_blank" rel="noopener noreferrer">X</a>
+			</nav>
 		</header>
 		<slot />
-		<footer>© {new Date().getFullYear()} Sebastián Estrella</footer>
+		<footer>
+			<p>© {new Date().getFullYear()} Sebastián Estrella</p>
+		</footer>
 	</body>
 </html>
 
@@ -38,10 +45,16 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 
 	header {
 		padding: 16px 24px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 8px 20px;
 	}
 
 	nav {
 		display: flex;
+		align-items: center;
 		gap: 20px;
 		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
 	}
@@ -56,6 +69,11 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 		text-decoration: underline;
 	}
 
+	.social a {
+		font-weight: 400;
+		color: #4f46e5;
+	}
+
 	footer {
 		margin-top: 48px;
 		padding: 24px;
@@ -64,5 +82,9 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 		font-size: 14px;
 		color: #6b7280;
 		text-align: center;
+	}
+
+	footer p {
+		margin: 0;
 	}
 </style>
