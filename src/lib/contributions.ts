@@ -23,11 +23,7 @@ export type ContributionData = {
 };
 
 const USERNAME = process.env.GITHUB_USERNAME ?? 'sestrella';
-
-const headers: Record<string, string> = {
-	Accept: 'application/vnd.github+json',
-	'X-GitHub-Api-Version': '2022-11-28',
-};
+const GRAPHQL_URL = 'https://api.github.com/graphql';
 
 const token =
 	process.env.GITHUB_TOKEN ??
@@ -39,15 +35,68 @@ const token =
 		}
 	})();
 
+const headers: Record<string, string> = {
+	Accept: 'application/vnd.github+json',
+	'Content-Type': 'application/json',
+};
+
 if (token) {
 	headers.Authorization = `Bearer ${token}`;
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function fetchJson(url: string) {
+type SearchNode = {
+	number: number;
+	title: string;
+	url: string;
+	mergedAt: string | null;
+	bodyText: string | null;
+	repository: {
+		nameWithOwner: string;
+		primaryLanguage: { name: string } | null;
+	};
+};
+
+type SearchResult = {
+	search: {
+		issueCount: number;
+		pageInfo: { hasNextPage: boolean; endCursor: string | null };
+		nodes: (SearchNode | null)[];
+	};
+};
+
+const SEARCH_QUERY = `
+	query SearchMergedPrs($q: String!, $cursor: String) {
+		search(query: $q, type: ISSUE, first: 100, after: $cursor) {
+			issueCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			nodes {
+				... on PullRequest {
+					number
+					title
+					url
+					mergedAt
+					bodyText
+					repository {
+						nameWithOwner
+						primaryLanguage {
+							name
+						}
+					}
+				}
+			}
+		}
+	}
+`;
+
+async function graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+	const body = JSON.stringify({ query, variables });
 	for (let attempt = 0; attempt < 3; attempt++) {
-		const res = await fetch(url, { headers });
+		const res = await fetch(GRAPHQL_URL, { method: 'POST', headers, body });
 		if (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0') {
 			const reset = Number(res.headers.get('x-ratelimit-reset') ?? 0) * 1000;
 			await sleep(Math.max(0, reset - Date.now()) + 1000);
@@ -55,46 +104,43 @@ async function fetchJson(url: string) {
 		}
 		if (!res.ok) {
 			throw new Error(
-				`GitHub API request failed (${res.status}). Set GITHUB_TOKEN for a higher rate limit.`,
+				`GitHub GraphQL request failed (${res.status}). Set GITHUB_TOKEN to authenticate.`,
 			);
 		}
-		return res.json();
+		const data = await res.json();
+		if (data.errors?.length) {
+			throw new Error(`GitHub GraphQL error: ${data.errors.map((e) => e.message).join('; ')}`);
+		}
+		return data.data as T;
 	}
 	throw new Error('GitHub API rate limited; retry the build later or set GITHUB_TOKEN.');
 }
 
-async function fetchMergedPrs(username: string) {
-	const prs = [];
-	for (let page = 1; page <= 10; page++) {
-		const query = `author:${username} is:pr is:merged`;
-		const data = await fetchJson(
-			`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=100&page=${page}`,
-		);
-		const batch = data.items ?? [];
-		if (batch.length === 0) break;
-		prs.push(...batch);
-		if (prs.length >= data.total_count) break;
+async function fetchMergedPrs(username: string): Promise<Contribution[]> {
+	const prs: Contribution[] = [];
+	let cursor: string | null = null;
+	for (let page = 0; page < 10; page++) {
+		const data = await graphql<SearchResult>(SEARCH_QUERY, {
+			q: `author:${username} is:pr is:merged`,
+			cursor,
+		});
+		const nodes = data.search.nodes.filter((n): n is SearchNode => n !== null);
+		if (nodes.length === 0) break;
+		for (const node of nodes) {
+			prs.push({
+				repo: node.repository.nameWithOwner,
+				number: node.number,
+				title: node.title,
+				url: node.url,
+				mergedAt: node.mergedAt ?? '',
+				body: node.bodyText,
+				language: node.repository.primaryLanguage?.name ?? 'Other',
+			});
+		}
+		if (!data.search.pageInfo.hasNextPage || prs.length >= data.search.issueCount) break;
+		cursor = data.search.pageInfo.endCursor;
 	}
 	return prs;
-}
-
-async function fetchRepoLanguages(repos: string[]) {
-	const languages: Record<string, string> = {};
-	let index = 0;
-	async function worker() {
-		while (index < repos.length) {
-			const repo = repos[index++];
-			try {
-				const data = await fetchJson(`https://api.github.com/repos/${repo}`);
-				languages[repo] = data.language ?? 'Other';
-			} catch {
-				languages[repo] = 'Other';
-			}
-		}
-	}
-	const workers = Array.from({ length: Math.min(8, repos.length) }, worker);
-	await Promise.all(workers);
-	return languages;
 }
 
 export function languageSlug(language: string) {
@@ -138,21 +184,8 @@ function groupBy<T>(items: T[], key: (item: T) => string | number) {
 }
 
 async function load(): Promise<ContributionData> {
-	const basePrs = (await fetchMergedPrs(USERNAME))
-		.filter((pr) => pr.repository_url.split('/repos/')[1].split('/')[0] !== USERNAME)
-		.map((pr) => ({
-			repo: pr.repository_url.replace('https://api.github.com/repos/', ''),
-			number: pr.number,
-			title: pr.title,
-			url: pr.html_url,
-			mergedAt: pr.pull_request?.merged_at ?? pr.closed_at ?? pr.updated_at,
-			body: pr.body,
-		}));
-
-	const repoLanguages = await fetchRepoLanguages([...new Set(basePrs.map((pr) => pr.repo))]);
-
-	const mergedPrs = basePrs
-		.map((pr) => ({ ...pr, language: repoLanguages[pr.repo] ?? 'Other' }))
+	const mergedPrs = (await fetchMergedPrs(USERNAME))
+		.filter((pr) => pr.repo.split('/')[0] !== USERNAME)
 		.sort((a, b) => new Date(b.mergedAt).getTime() - new Date(a.mergedAt).getTime());
 
 	const byYear = groupBy(mergedPrs, (pr) => new Date(pr.mergedAt).getUTCFullYear());
