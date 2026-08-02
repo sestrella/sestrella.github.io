@@ -1,18 +1,58 @@
 ---
 interface Props {
 	items: { label: string; href: string }[];
+	collapsible?: boolean;
+	visibleCount?: number;
 }
 
-const { items } = Astro.props;
+const { items, collapsible = false, visibleCount = 10 } = Astro.props;
+const shown = collapsible ? items.slice(0, visibleCount) : items;
+const overflow = collapsible ? items.slice(visibleCount) : [];
 ---
 
 {items.length > 0 && (
-	<nav class="quick" aria-label="Quick filters">
+	<nav
+		class:list={['quick', { 'quick--collapsed': overflow.length > 0 }]}
+		data-quick
+		aria-label="Quick filters"
+	>
 		<span class="quick-label">Jump to:</span>
-		{items.map((item) => (
+		{shown.map((item) => (
 			<a href={item.href}>{item.label}</a>
 		))}
+		<span class="quick-overflow" data-quick-overflow hidden>
+			{overflow.map((item) => (
+				<a href={item.href}>{item.label}</a>
+			))}
+		</span>
+		{overflow.length > 0 && (
+			<button
+				type="button"
+				class="quick-toggle"
+				data-quick-toggle
+				data-total={items.length}
+				data-shown={shown.length}
+			>
+				Show all {items.length}
+			</button>
+		)}
 	</nav>
+)}
+
+{overflow.length > 0 && (
+	<script>
+		const nav = document.querySelector('[data-quick]');
+		const toggle = nav?.querySelector('[data-quick-toggle]');
+		const overflow = nav?.querySelector('[data-quick-overflow]');
+		if (toggle && overflow) {
+			const total = Number(toggle.dataset.total);
+			toggle.addEventListener('click', () => {
+				const expanded = nav!.classList.toggle('quick--expanded');
+				overflow.hidden = !expanded;
+				toggle.textContent = expanded ? 'Show less' : `Show all ${total}`;
+			});
+		}
+	</script>
 )}
 
 <style>
@@ -40,6 +80,32 @@ const { items } = Astro.props;
 	}
 
 	.quick a:hover {
+		text-decoration: underline;
+	}
+
+	.quick-overflow {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.quick-overflow[hidden] {
+		display: none;
+	}
+
+	.quick-toggle {
+		font-family: inherit;
+		font-size: 13px;
+		color: #4338ca;
+		background: #eef2ff;
+		border: 1px dashed #4338ca;
+		border-radius: 999px;
+		padding: 4px 12px;
+		cursor: pointer;
+	}
+
+	.quick-toggle:hover {
 		text-decoration: underline;
 	}
 </style>
