@@ -1,0 +1,83 @@
+---
+import type { Contribution } from '../lib/contributions';
+import { formatDate, contributionRepoUrl } from '../lib/contributions';
+
+interface Props {
+	prs: Contribution[];
+	showRepo?: boolean;
+}
+
+const { prs, showRepo = true } = Astro.props;
+---
+
+<ul class="pr-list">
+	{prs.map((pr) => (
+		<li>
+			<span class="line">
+				{showRepo && (
+					<a class="repo" href={contributionRepoUrl(pr.repo)}>
+						{pr.repo}
+					</a>
+				)}
+				<a href={pr.url}>{pr.title}</a>
+				<span class="detail"> #{pr.number}</span>
+			</span>
+			<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
+		</li>
+	))}
+</ul>
+
+<style>
+	.pr-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.pr-list li {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 6px 0;
+		border-bottom: 1px solid #f3f4f6;
+		font-size: 15px;
+	}
+
+	.line {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.line a {
+		color: #4f46e5;
+		text-decoration: none;
+	}
+
+	.line a:hover {
+		text-decoration: underline;
+	}
+
+	.repo {
+		font-weight: 600;
+		color: #111827 !important;
+		margin-right: 8px;
+	}
+
+	.detail {
+		color: #6b7280;
+	}
+
+	time {
+		flex: 0 0 auto;
+		font-size: 13px;
+		color: #9ca3af;
+	}
+
+	@media (max-width: 560px) {
+		.pr-list li {
+			flex-direction: column;
+			gap: 2px;
+		}
+	}
+</style>

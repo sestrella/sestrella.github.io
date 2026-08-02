@@ -1,0 +1,49 @@
+---
+interface Props {
+	active: 'timeline' | 'repository' | 'language';
+}
+
+const { active } = Astro.props;
+
+const items = [
+	{ id: 'timeline', label: 'Timeline', href: '/contributions' },
+	{ id: 'repository', label: 'By repository', href: '/contributions/repository' },
+	{ id: 'language', label: 'By language', href: '/contributions/language' },
+] as const;
+---
+
+<nav class="view-nav" aria-label="View">
+	{items.map((item) => (
+		<a href={item.href} aria-current={active === item.id ? 'page' : undefined}>
+			{item.label}
+		</a>
+	))}
+</nav>
+
+<style>
+	.view-nav {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 4px;
+		margin: 0 0 28px;
+		border-radius: 10px;
+		background: #f3f4f6;
+	}
+
+	.view-nav a {
+		border-radius: 7px;
+		padding: 6px 14px;
+		font-size: 14px;
+		font-family: inherit;
+		color: #4b5563;
+		text-decoration: none;
+	}
+
+	.view-nav a[aria-current='page'] {
+		color: #111827;
+		background: #ffffff;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+		font-weight: 500;
+	}
+</style>

@@ -1,139 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { execSync } from 'node:child_process';
+import ContributionsNav from '../components/ContributionsNav.astro';
+import TimelineList from '../components/TimelineList.astro';
+import { loadContributions } from '../lib/contributions';
 
-const USERNAME = process.env.GITHUB_USERNAME ?? 'sestrella';
-
-const headers = {
-	Accept: 'application/vnd.github+json',
-	'X-GitHub-Api-Version': '2022-11-28',
-};
-
-const token =
-	process.env.GITHUB_TOKEN ??
-	(() => {
-		try {
-			return process.env['GH_TOKEN'] ?? execSync('gh auth token', { encoding: 'utf-8' }).trim();
-		} catch {
-			return undefined;
-		}
-	})();
-
-if (token) {
-	headers.Authorization = `Bearer ${token}`;
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function fetchJson(url: string) {
-	for (let attempt = 0; attempt < 3; attempt++) {
-		const res = await fetch(url, { headers });
-		if (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0') {
-			const reset = Number(res.headers.get('x-ratelimit-reset') ?? 0) * 1000;
-			await sleep(Math.max(0, reset - Date.now()) + 1000);
-			continue;
-		}
-		if (!res.ok) {
-			throw new Error(
-				`GitHub API request failed (${res.status}). Set GITHUB_TOKEN for a higher rate limit.`,
-			);
-		}
-		return res.json();
-	}
-	throw new Error('GitHub API rate limited; retry the build later or set GITHUB_TOKEN.');
-}
-
-async function fetchMergedPrs(username: string) {
-	const prs = [];
-	for (let page = 1; page <= 10; page++) {
-		const query = `author:${username} is:pr is:merged`;
-		const data = await fetchJson(
-			`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=100&page=${page}`,
-		);
-		const batch = data.items ?? [];
-		if (batch.length === 0) break;
-		prs.push(...batch);
-		if (prs.length >= data.total_count) break;
-	}
-	return prs;
-}
-
-async function fetchRepoLanguages(repos: string[]) {
-	const languages: Record<string, string> = {};
-	let index = 0;
-	async function worker() {
-		while (index < repos.length) {
-			const repo = repos[index++];
-			try {
-				const data = await fetchJson(`https://api.github.com/repos/${repo}`);
-				languages[repo] = data.language ?? 'Other';
-			} catch {
-				languages[repo] = 'Other';
-			}
-		}
-	}
-	const workers = Array.from({ length: Math.min(8, repos.length) }, worker);
-	await Promise.all(workers);
-	return languages;
-}
-
-const basePrs = (await fetchMergedPrs(USERNAME))
-	.filter((pr) => pr.repository_url.split('/repos/')[1].split('/')[0] !== USERNAME)
-	.map((pr) => ({
-		repo: pr.repository_url.replace('https://api.github.com/repos/', ''),
-		number: pr.number,
-		title: pr.title,
-		url: pr.html_url,
-		mergedAt: pr.pull_request?.merged_at ?? pr.closed_at ?? pr.updated_at,
-		body: pr.body,
-	}));
-
-const repoLanguages = await fetchRepoLanguages([...new Set(basePrs.map((pr) => pr.repo))]);
-
-const mergedPrs = basePrs
-	.map((pr) => ({ ...pr, language: repoLanguages[pr.repo] ?? 'Other' }))
-	.sort((a, b) => new Date(b.mergedAt).getTime() - new Date(a.mergedAt).getTime());
-
-const repoCount = new Set(mergedPrs.map((pr) => pr.repo)).size;
-
-const repoGroups = Object.entries(
-	mergedPrs.reduce((acc, pr) => {
-		(acc[pr.repo] ??= []).push(pr);
-		return acc;
-	}, {} as Record<string, typeof mergedPrs>),
-)
-	.map(([repo, prs]) => ({ repo, prs, count: prs.length }))
-	.sort((a, b) => b.count - a.count);
-
-const languageGroups = Object.entries(
-	mergedPrs.reduce((acc, pr) => {
-		(acc[pr.language] ??= []).push(pr);
-		return acc;
-	}, {} as Record<string, typeof mergedPrs>),
-)
-	.map(([language, prs]) => ({ language, prs, count: prs.length }))
-	.sort((a, b) => b.count - a.count || a.language.localeCompare(b.language));
-
-const years = Object.entries(
-	mergedPrs.reduce((acc, pr) => {
-		const year = new Date(pr.mergedAt).getUTCFullYear();
-		(acc[year] ??= []).push(pr);
-		return acc;
-	}, {} as Record<number, typeof mergedPrs>),
-)
-	.map(([year, prs]) => ({ year: Number(year), prs }))
-	.sort((a, b) => b.year - a.year);
-
-function formatDate(iso: string) {
-	return new Date(iso).toLocaleDateString('en-US', {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric',
-	});
-}
+const { mergedPrs, repoCount, years } = await loadContributions();
 ---
 
-<Layout title={`OSS Contributions · Sebastián Estrella`}>
+<Layout title="OSS Contributions · Sebastián Estrella">
 	<main>
 		<h1>Open Source Contributions</h1>
 		<p class="sub">
@@ -144,116 +18,18 @@ function formatDate(iso: string) {
 			{mergedPrs.length} merged pull requests across {repoCount} repositories
 		</p>
 
-		<div class="toggle" role="group" aria-label="View">
-			<button data-view="timeline" aria-pressed="true">Timeline</button>
-			<button data-view="repository" aria-pressed="false">By repository</button>
-			<button data-view="language" aria-pressed="false">By language</button>
-		</div>
+		<ContributionsNav active="timeline" />
 
-		{mergedPrs.length > 0 ? (
-			<section id="timeline-view">
-				{years.map(({ year, prs }) => (
-					<div class="year">
-						<h2 class="year-header">{year}</h2>
-						<ol class="timeline">
-							{prs.map((pr) => (
-								<li>
-									<span class="badge">Merged PR</span>
-									<div class="body">
-										<a class="repo" href={`https://github.com/${pr.repo}`}>{pr.repo}</a>
-										<p class="desc">
-											<a href={pr.url}>{pr.title}</a>
-											<span class="detail"> · #{pr.number}</span>
-										</p>
-										{pr.body && (
-											<p class="snippet">
-												{pr.body.replace(/\s+/g, ' ').trim().slice(0, 140)}
-												{pr.body.length > 140 ? '…' : ''}
-											</p>
-										)}
-										<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
-									</div>
-								</li>
-							))}
-						</ol>
-					</div>
-				))}
+		{years.map(({ year, prs }) => (
+			<section class="year">
+				<h2 class="year-header">
+					<a href={`/contributions/${year}`}>{year}</a>
+				</h2>
+				<TimelineList prs={prs} />
 			</section>
-
-			<section id="repository-view" hidden>
-				{repoGroups.map((group) => (
-					<div class="group">
-						<h2>
-							<a href={`https://github.com/${group.repo}`}>{group.repo}</a>
-							<span class="group-count">{group.count}</span>
-						</h2>
-						<ul>
-							{group.prs.map((pr) => (
-								<li>
-									<a href={pr.url}>{pr.title}</a>
-									<span class="detail"> #{pr.number}</span>
-									<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
-								</li>
-							))}
-						</ul>
-					</div>
-				))}
-			</section>
-
-			<section id="language-view" hidden>
-				{languageGroups.map((group) => (
-					<div class="group">
-						<h2>
-							<span class="language">{group.language}</span>
-							<span class="group-count">{group.count}</span>
-						</h2>
-						<ul>
-							{group.prs.map((pr) => (
-								<li>
-									<a href={pr.url}>{pr.title}</a>
-									<span class="detail"> {pr.repo} #{pr.number}</span>
-									<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
-								</li>
-							))}
-						</ul>
-					</div>
-				))}
-			</section>
-		) : (
-			<p class="empty">No merged pull requests found in other repositories.</p>
-		)}
+		))}
 	</main>
 </Layout>
-
-<script>
-	const buttons = document.querySelectorAll<HTMLButtonElement>('[data-view]');
-	const views = {
-		timeline: document.getElementById('timeline-view'),
-		repository: document.getElementById('repository-view'),
-		language: document.getElementById('language-view'),
-	};
-
-	function apply(view: string) {
-		for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.view === view));
-		for (const [key, el] of Object.entries(views)) el.hidden = key !== view;
-	}
-
-	const initial = new URLSearchParams(location.search).get('view');
-	if (initial === 'repository' || initial === 'timeline' || initial === 'language') {
-		apply(initial);
-	} else {
-		apply('timeline');
-	}
-
-	for (const button of buttons) {
-		button.addEventListener('click', () => {
-			apply(button.dataset.view!);
-			const url = new URL(location.href);
-			url.searchParams.set('view', button.dataset.view!);
-			history.replaceState({}, '', url);
-		});
-	}
-</script>
 
 <style>
 	main {
@@ -280,37 +56,6 @@ function formatDate(iso: string) {
 		margin: 0 0 32px;
 	}
 
-	.toggle {
-		display: inline-flex;
-		gap: 4px;
-		padding: 4px;
-		margin-bottom: 32px;
-		border-radius: 10px;
-		background: #f3f4f6;
-	}
-
-	.toggle button {
-		border: none;
-		border-radius: 7px;
-		padding: 6px 14px;
-		font-size: 14px;
-		font-family: inherit;
-		color: #4b5563;
-		background: transparent;
-		cursor: pointer;
-	}
-
-	.toggle button[aria-pressed='true'] {
-		color: #111827;
-		background: #ffffff;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-		font-weight: 500;
-	}
-
-	.group {
-		margin-bottom: 28px;
-	}
-
 	.year {
 		margin-bottom: 32px;
 	}
@@ -332,172 +77,12 @@ function formatDate(iso: string) {
 		background: #e5e7eb;
 	}
 
-	.group h2 {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 16px;
-		margin: 0 0 8px;
-	}
-
-	.group h2 a {
+	.year-header a {
 		color: #111827;
 		text-decoration: none;
 	}
 
-	.group h2 a:hover {
+	.year-header a:hover {
 		text-decoration: underline;
-	}
-
-	.group-count {
-		font-size: 12px;
-		font-weight: 600;
-		color: #4338ca;
-		background: #eef2ff;
-		border-radius: 999px;
-		padding: 2px 8px;
-	}
-
-	.language {
-		font-size: 15px;
-		font-weight: 600;
-		color: #4f46e5;
-	}
-
-	.group ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-
-	.group ul li {
-		padding: 6px 0;
-		border-bottom: 1px solid #f3f4f6;
-		font-size: 15px;
-	}
-
-	.group ul li a {
-		color: #4f46e5;
-		text-decoration: none;
-	}
-
-	.group ul li a:hover {
-		text-decoration: underline;
-	}
-
-	.group ul li time {
-		float: right;
-		margin-left: 12px;
-	}
-
-	.timeline {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		position: relative;
-	}
-
-	.timeline::before {
-		content: '';
-		position: absolute;
-		left: 11px;
-		top: 4px;
-		bottom: 4px;
-		width: 2px;
-		background: #e5e7eb;
-	}
-
-	.timeline li {
-		position: relative;
-		display: flex;
-		gap: 16px;
-		padding-bottom: 28px;
-	}
-
-	.timeline li::before {
-		content: '';
-		flex: 0 0 auto;
-		width: 12px;
-		height: 12px;
-		margin-top: 4px;
-		border-radius: 50%;
-		background: #4f46e5;
-		border: 3px solid #fff;
-		box-shadow: 0 0 0 1px #e5e7eb;
-	}
-
-	.badge {
-		flex: 0 0 auto;
-		font-size: 11px;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		padding: 3px 8px;
-		border-radius: 999px;
-		background: #eef2ff;
-		color: #4338ca;
-		margin-top: 2px;
-	}
-
-	.body {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-	}
-
-	.repo {
-		font-weight: 600;
-		color: #111827;
-		text-decoration: none;
-	}
-
-	.repo:hover {
-		text-decoration: underline;
-	}
-
-	.desc {
-		margin: 0;
-		color: #374151;
-		overflow-wrap: anywhere;
-	}
-
-	.desc a {
-		color: #4f46e5;
-		text-decoration: none;
-	}
-
-	.desc a:hover {
-		text-decoration: underline;
-	}
-
-	.detail {
-		color: #6b7280;
-	}
-
-	.snippet {
-		margin: 2px 0 0;
-		color: #6b7280;
-		font-size: 14px;
-		line-height: 1.45;
-		overflow-wrap: anywhere;
-	}
-
-	time {
-		font-size: 13px;
-		color: #9ca3af;
-	}
-
-	.empty {
-		color: #6b7280;
-	}
-
-	@media (max-width: 560px) {
-		.timeline li {
-			flex-wrap: wrap;
-		}
-
-		.badge {
-			margin-left: 28px;
-		}
 	}
 </style>
