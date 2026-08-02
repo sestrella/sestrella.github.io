@@ -120,6 +120,15 @@ export function contributionRepoUrl(repo: string) {
 	return `/contributions/repository/${repo}`;
 }
 
+export function anchorId(input: string) {
+	return (
+		input
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '') || 'x'
+	);
+}
+
 function groupBy<T>(items: T[], key: (item: T) => string | number) {
 	return items.reduce((acc, item) => {
 		const k = key(item);

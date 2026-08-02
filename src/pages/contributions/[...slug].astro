@@ -1,9 +1,10 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ContributionsNav from '../../components/ContributionsNav.astro';
+import QuickFilters from '../../components/QuickFilters.astro';
 import TimelineList from '../../components/TimelineList.astro';
 import GroupedList from '../../components/GroupedList.astro';
-import { loadContributions, languageSlug } from '../../lib/contributions';
+import { loadContributions, languageSlug, anchorId } from '../../lib/contributions';
 import type { ContributionData } from '../../lib/contributions';
 
 export async function getStaticPaths() {
@@ -24,12 +25,13 @@ const data: ContributionData = await loadContributions();
 const segments = (Astro.params.slug ?? '').split('/').filter(Boolean);
 const [head, ...rest] = segments;
 
-type Group = { label: string; href: string; count: number; prs: typeof data.mergedPrs };
+type Group = { id: string; label: string; href: string; count: number; prs: typeof data.mergedPrs };
 
 let active: 'timeline' | 'repository' | 'language' = 'timeline';
 let heading = '';
 let count = '';
 let groups: Group[] = [];
+let quickFilters: { label: string; href: string }[] = [];
 let prs = data.mergedPrs;
 let showRepo = true;
 let back: { href: string; label: string } | null = null;
@@ -47,11 +49,13 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 		heading = 'Contributions by repository';
 		count = `${data.mergedPrs.length} merged pull requests across ${data.repoCount} repositories`;
 		groups = data.repoGroups.map(({ repo, prs, count }) => ({
+			id: `repo-${anchorId(repo)}`,
 			label: repo,
 			href: `/contributions/repository/${repo}`,
 			count,
 			prs,
 		}));
+		quickFilters = groups.slice(0, 5).map(({ id, label }) => ({ label, href: `#${id}` }));
 	} else {
 		const repo = rest.join('/');
 		heading = repo;
@@ -66,11 +70,13 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 		heading = 'Contributions by language';
 		count = `${data.mergedPrs.length} merged pull requests`;
 		groups = data.languageGroups.map(({ language, prs, count }) => ({
+			id: `lang-${anchorId(language)}`,
 			label: language,
 			href: `/contributions/language/${languageSlug(language)}`,
 			count,
 			prs,
 		}));
+		quickFilters = groups.slice(0, 5).map(({ id, label }) => ({ label, href: `#${id}` }));
 	} else {
 		const slug = rest.join('/');
 		const language = data.languages.find((l) => languageSlug(l) === slug) ?? slug;
@@ -94,9 +100,11 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 
 		<ContributionsNav active={active} />
 
+		{quickFilters.length > 0 && <QuickFilters items={quickFilters} />}
+
 		{groups.length > 0 ? (
 			groups.map((group) => (
-				<section class="group">
+				<section class="group" id={group.id}>
 					<h2>
 						<a href={group.href}>{group.label}</a>
 						<span class="group-count">{group.count}</span>
@@ -117,6 +125,10 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 </Layout>
 
 <style>
+	:global(html) {
+		scroll-behavior: smooth;
+	}
+
 	main {
 		max-width: 720px;
 		margin: 0 auto;
@@ -153,6 +165,7 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 
 	.group {
 		margin-bottom: 28px;
+		scroll-margin-top: 16px;
 	}
 
 	.group h2 {

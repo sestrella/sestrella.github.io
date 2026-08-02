@@ -1,0 +1,45 @@
+---
+interface Props {
+	items: { label: string; href: string }[];
+}
+
+const { items } = Astro.props;
+---
+
+{items.length > 0 && (
+	<nav class="quick" aria-label="Quick filters">
+		<span class="quick-label">Jump to:</span>
+		{items.map((item) => (
+			<a href={item.href}>{item.label}</a>
+		))}
+	</nav>
+)}
+
+<style>
+	.quick {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		margin: -8px 0 28px;
+	}
+
+	.quick-label {
+		font-size: 13px;
+		font-weight: 600;
+		color: #6b7280;
+	}
+
+	.quick a {
+		font-size: 13px;
+		color: #4338ca;
+		background: #eef2ff;
+		border-radius: 999px;
+		padding: 4px 12px;
+		text-decoration: none;
+	}
+
+	.quick a:hover {
+		text-decoration: underline;
+	}
+</style>
