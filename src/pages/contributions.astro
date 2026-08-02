@@ -1,10 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ContributionsNav from '../components/ContributionsNav.astro';
+import QuickFilters from '../components/QuickFilters.astro';
 import TimelineList from '../components/TimelineList.astro';
 import { loadContributions } from '../lib/contributions';
 
 const { mergedPrs, repoCount, years } = await loadContributions();
+const yearFilters = years.slice(0, 5).map(({ year }) => ({
+	label: String(year),
+	href: `#year-${year}`,
+}));
 ---
 
 <Layout title="OSS Contributions · Sebastián Estrella">
@@ -19,9 +24,10 @@ const { mergedPrs, repoCount, years } = await loadContributions();
 		</p>
 
 		<ContributionsNav active="timeline" />
+		<QuickFilters items={yearFilters} />
 
 		{years.map(({ year, prs }) => (
-			<section class="year">
+			<section class="year" id={`year-${year}`}>
 				<h2 class="year-header">
 					<a href={`/contributions/${year}`}>{year}</a>
 				</h2>
@@ -32,6 +38,10 @@ const { mergedPrs, repoCount, years } = await loadContributions();
 </Layout>
 
 <style>
+	:global(html) {
+		scroll-behavior: smooth;
+	}
+
 	main {
 		max-width: 720px;
 		margin: 0 auto;
@@ -58,6 +68,7 @@ const { mergedPrs, repoCount, years } = await loadContributions();
 
 	.year {
 		margin-bottom: 32px;
+		scroll-margin-top: 16px;
 	}
 
 	.year-header {
