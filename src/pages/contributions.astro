@@ -114,6 +114,16 @@ const languageGroups = Object.entries(
 	.map(([language, prs]) => ({ language, prs, count: prs.length }))
 	.sort((a, b) => b.count - a.count || a.language.localeCompare(b.language));
 
+const years = Object.entries(
+	mergedPrs.reduce((acc, pr) => {
+		const year = new Date(pr.mergedAt).getUTCFullYear();
+		(acc[year] ??= []).push(pr);
+		return acc;
+	}, {} as Record<number, typeof mergedPrs>),
+)
+	.map(([year, prs]) => ({ year: Number(year), prs }))
+	.sort((a, b) => b.year - a.year);
+
 function formatDate(iso: string) {
 	return new Date(iso).toLocaleDateString('en-US', {
 		month: 'short',
@@ -142,27 +152,32 @@ function formatDate(iso: string) {
 
 		{mergedPrs.length > 0 ? (
 			<section id="timeline-view">
-				<ol class="timeline">
-					{mergedPrs.map((pr) => (
-						<li>
-							<span class="badge">Merged PR</span>
-							<div class="body">
-								<a class="repo" href={`https://github.com/${pr.repo}`}>{pr.repo}</a>
-								<p class="desc">
-									<a href={pr.url}>{pr.title}</a>
-									<span class="detail"> · #{pr.number}</span>
-								</p>
-								{pr.body && (
-									<p class="snippet">
-										{pr.body.replace(/\s+/g, ' ').trim().slice(0, 140)}
-										{pr.body.length > 140 ? '…' : ''}
-									</p>
-								)}
-								<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
-							</div>
-						</li>
-					))}
-				</ol>
+				{years.map(({ year, prs }) => (
+					<div class="year">
+						<h2 class="year-header">{year}</h2>
+						<ol class="timeline">
+							{prs.map((pr) => (
+								<li>
+									<span class="badge">Merged PR</span>
+									<div class="body">
+										<a class="repo" href={`https://github.com/${pr.repo}`}>{pr.repo}</a>
+										<p class="desc">
+											<a href={pr.url}>{pr.title}</a>
+											<span class="detail"> · #{pr.number}</span>
+										</p>
+										{pr.body && (
+											<p class="snippet">
+												{pr.body.replace(/\s+/g, ' ').trim().slice(0, 140)}
+												{pr.body.length > 140 ? '…' : ''}
+											</p>
+										)}
+										<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
+									</div>
+								</li>
+							))}
+						</ol>
+					</div>
+				))}
 			</section>
 
 			<section id="repository-view" hidden>
@@ -294,6 +309,27 @@ function formatDate(iso: string) {
 
 	.group {
 		margin-bottom: 28px;
+	}
+
+	.year {
+		margin-bottom: 32px;
+	}
+
+	.year-header {
+		font-size: 18px;
+		margin: 0 0 16px;
+		color: #111827;
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.year-header::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: #e5e7eb;
 	}
 
 	.group h2 {
