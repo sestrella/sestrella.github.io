@@ -1,0 +1,330 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const USERNAME = process.env.GITHUB_USERNAME ?? 'sestrella';
+
+const CONTRIBUTION_TYPES = new Set([
+	'PushEvent',
+	'PullRequestEvent',
+	'IssuesEvent',
+	'IssueCommentEvent',
+	'PullRequestReviewEvent',
+	'PullRequestReviewCommentEvent',
+	'CommitCommentEvent',
+	'DiscussionEvent',
+]);
+
+const headers = {
+	Accept: 'application/vnd.github+json',
+	'X-GitHub-Api-Version': '2022-11-28',
+};
+
+if (process.env.GITHUB_TOKEN) {
+	headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+}
+
+async function fetchAllEvents(username: string) {
+	const events = [];
+	for (let page = 1; page <= 10; page++) {
+		const res = await fetch(
+			`https://api.github.com/users/${username}/events/public?per_page=100&page=${page}`,
+			{ headers },
+		);
+		if (!res.ok) {
+			throw new Error(
+				`GitHub API request failed (${res.status}). Set GITHUB_TOKEN for a higher rate limit.`,
+			);
+		}
+		const batch = await res.json();
+		if (batch.length === 0) break;
+		events.push(...batch);
+		if (batch.length < 100) break;
+	}
+	return events;
+}
+
+function capitalize(s: string) {
+	return s ? s[0].toUpperCase() + s.slice(1) : '';
+}
+
+type Contribution = {
+	kind: string;
+	title: string;
+	detail: string;
+	repo: string;
+	url: string;
+	date: string;
+};
+
+function describe(event: any): Contribution | null {
+	const repo = event.repo.name;
+	const repoUrl = `https://github.com/${repo}`;
+	const payload = event.payload ?? {};
+	const base = { repo, date: event.created_at };
+	const num = payload.number ?? payload.pull_request?.number ?? payload.issue?.number;
+
+	switch (event.type) {
+		case 'PushEvent': {
+			const count = payload.commits?.length ?? 0;
+			const branch = payload.ref?.replace('refs/heads/', '');
+			return {
+				...base,
+				kind: 'Commit',
+				title: `Pushed ${count} commit${count === 1 ? '' : 's'}`,
+				detail: branch ? `to ${branch}` : '',
+				url: repoUrl,
+			};
+		}
+		case 'PullRequestEvent':
+			return {
+				...base,
+				kind: 'Pull request',
+				title: `${capitalize(payload.action ?? 'updated')} pull request`,
+				detail: num ? `#${num}` : '',
+				url: num ? `https://github.com/${repo}/pull/${num}` : repoUrl,
+			};
+		case 'IssuesEvent': {
+			const title = payload.issue?.title;
+			return {
+				...base,
+				kind: 'Issue',
+				title: `${capitalize(payload.action ?? 'updated')} issue`,
+				detail: num ? `#${num}${title ? ` · ${title}` : ''}` : title ?? '',
+				url: payload.issue?.html_url ?? (num ? `https://github.com/${repo}/issues/${num}` : repoUrl),
+			};
+		}
+		case 'IssueCommentEvent': {
+			const issue = payload.issue ?? {};
+			const isPr = Boolean(issue.pull_request);
+			return {
+				...base,
+				kind: 'Comment',
+				title: `Commented on ${isPr ? 'pull request' : 'issue'}`,
+				detail: num ? `#${num}${issue.title ? ` · ${issue.title}` : ''}` : issue.title ?? '',
+				url: payload.comment?.html_url ?? repoUrl,
+			};
+		}
+		case 'PullRequestReviewEvent': {
+			const state = payload.review?.state;
+			return {
+				...base,
+				kind: 'Review',
+				title: 'Reviewed pull request',
+				detail: num ? `#${num}${state ? ` · ${state}` : ''}` : state ?? '',
+				url: num ? `https://github.com/${repo}/pull/${num}#pullrequestreview-${payload.review?.id ?? ''}` : repoUrl,
+			};
+		}
+		case 'PullRequestReviewCommentEvent': {
+			const path = payload.comment?.path ? ` · ${payload.comment.path}` : '';
+			return {
+				...base,
+				kind: 'Review',
+				title: 'Commented on pull request',
+				detail: num ? `#${num}${path}` : path.replace(' · ', ''),
+				url: payload.comment?.html_url ?? repoUrl,
+			};
+		}
+		case 'CommitCommentEvent':
+			return {
+				...base,
+				kind: 'Comment',
+				title: 'Commented on a commit',
+				detail: '',
+				url: payload.comment?.html_url ?? repoUrl,
+			};
+		case 'DiscussionEvent':
+			return {
+				...base,
+				kind: 'Discussion',
+				title: 'Started a discussion',
+				detail: payload.discussion?.title ?? '',
+				url: payload.discussion?.html_url ?? repoUrl,
+			};
+		default:
+			return null;
+	}
+}
+
+const unique = new Map<string, any>();
+for (const event of await fetchAllEvents(USERNAME)) {
+	unique.set(event.id, event);
+}
+
+const contributions = [...unique.values()]
+	.map(describe)
+	.filter((c): c is Contribution => Boolean(c))
+	.filter((c) => c.repo.split('/')[0] !== USERNAME)
+	.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+const repoCount = new Set(contributions.map((c) => c.repo)).size;
+
+function formatDate(iso: string) {
+	return new Date(iso).toLocaleDateString('en-US', {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+	});
+}
+---
+
+<Layout title={`OSS Contributions · Sebastián Estrella`}>
+	<main>
+		<h1>Open Source Contributions</h1>
+		<p class="sub">
+			Timeline of activity in other people's repositories, pulled from the GitHub API at build
+			time.
+		</p>
+		<p class="count">
+			{contributions.length} contributions across {repoCount} repositories
+		</p>
+
+		{contributions.length > 0 ? (
+			<ol class="timeline">
+				{contributions.map((c) => (
+					<li>
+						<span class="badge">{c.kind}</span>
+						<div class="body">
+							<a class="repo" href={`https://github.com/${c.repo}`}>{c.repo}</a>
+							<p class="desc">
+								<a href={c.url}>{c.title}</a>
+								{c.detail && <span class="detail"> · {c.detail}</span>}
+							</p>
+							<time datetime={c.date}>{formatDate(c.date)}</time>
+						</div>
+					</li>
+				))}
+			</ol>
+		) : (
+			<p class="empty">No external contributions found.</p>
+		)}
+	</main>
+</Layout>
+
+<style>
+	main {
+		max-width: 720px;
+		margin: 0 auto;
+		padding: 24px;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+		color: #111827;
+	}
+
+	h1 {
+		font-size: 28px;
+		margin: 8px 0 4px;
+	}
+
+	.sub {
+		color: #4b5563;
+		margin: 0 0 24px;
+	}
+
+	.count {
+		font-size: 14px;
+		color: #6b7280;
+		margin: 0 0 32px;
+	}
+
+	.timeline {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		position: relative;
+	}
+
+	.timeline::before {
+		content: '';
+		position: absolute;
+		left: 11px;
+		top: 4px;
+		bottom: 4px;
+		width: 2px;
+		background: #e5e7eb;
+	}
+
+	.timeline li {
+		position: relative;
+		display: flex;
+		gap: 16px;
+		padding-bottom: 28px;
+	}
+
+	.timeline li::before {
+		content: '';
+		flex: 0 0 auto;
+		width: 12px;
+		height: 12px;
+		margin-top: 4px;
+		border-radius: 50%;
+		background: #4f46e5;
+		border: 3px solid #fff;
+		box-shadow: 0 0 0 1px #e5e7eb;
+	}
+
+	.badge {
+		flex: 0 0 auto;
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		padding: 3px 8px;
+		border-radius: 999px;
+		background: #eef2ff;
+		color: #4338ca;
+		margin-top: 2px;
+	}
+
+	.body {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.repo {
+		font-weight: 600;
+		color: #111827;
+		text-decoration: none;
+	}
+
+	.repo:hover {
+		text-decoration: underline;
+	}
+
+	.desc {
+		margin: 0;
+		color: #374151;
+		overflow-wrap: anywhere;
+	}
+
+	.desc a {
+		color: #4f46e5;
+		text-decoration: none;
+	}
+
+	.desc a:hover {
+		text-decoration: underline;
+	}
+
+	.detail {
+		color: #6b7280;
+	}
+
+	time {
+		font-size: 13px;
+		color: #9ca3af;
+	}
+
+	.empty {
+		color: #6b7280;
+	}
+
+	@media (max-width: 560px) {
+		.timeline li {
+			flex-wrap: wrap;
+		}
+
+		.badge {
+			margin-left: 28px;
+		}
+	}
+</style>
