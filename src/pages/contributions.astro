@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ContributionsNav from '../components/ContributionsNav.astro';
-import QuickFilters from '../components/QuickFilters.astro';
+import JumpTo from '../components/JumpTo.astro';
 import TimelineList from '../components/TimelineList.astro';
 import { loadContributions } from '../lib/contributions';
 
@@ -24,7 +24,7 @@ const yearFilters = years.map(({ year }) => ({
 		</p>
 
 		<ContributionsNav active="timeline" />
-		<QuickFilters items={yearFilters} />
+		<JumpTo items={yearFilters} />
 
 		{years.map(({ year, prs }) => (
 			<section class="year" id={`year-${year}`}>

@@ -12,15 +12,15 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 
 {items.length > 0 && (
 	<nav
-		class:list={['quick', { 'quick--collapsed': overflow.length > 0 }]}
-		data-quick
-		aria-label="Quick filters"
+		class:list={['jump', { 'jump--collapsed': overflow.length > 0 }]}
+		data-jump
+		aria-label="Jump to"
 	>
-		<span class="quick-label">Jump to:</span>
+		<span class="jump-label">Jump to:</span>
 		{shown.map((item) => (
 			<a href={item.href}>{item.label}</a>
 		))}
-		<span class="quick-overflow" data-quick-overflow hidden>
+		<span class="jump-overflow" data-jump-overflow hidden>
 			{overflow.map((item) => (
 				<a href={item.href}>{item.label}</a>
 			))}
@@ -28,8 +28,8 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 		{overflow.length > 0 && (
 			<button
 				type="button"
-				class="quick-toggle"
-				data-quick-toggle
+				class="jump-toggle"
+				data-jump-toggle
 				data-total={items.length}
 				data-shown={shown.length}
 			>
@@ -41,13 +41,13 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 
 {overflow.length > 0 && (
 	<script>
-		const nav = document.querySelector('[data-quick]');
-		const toggle = nav?.querySelector('[data-quick-toggle]');
-		const overflow = nav?.querySelector('[data-quick-overflow]');
+		const nav = document.querySelector('[data-jump]');
+		const toggle = nav?.querySelector('[data-jump-toggle]');
+		const overflow = nav?.querySelector('[data-jump-overflow]');
 		if (toggle && overflow) {
 			const total = Number(toggle.dataset.total);
 			toggle.addEventListener('click', () => {
-				const expanded = nav!.classList.toggle('quick--expanded');
+				const expanded = nav!.classList.toggle('jump--expanded');
 				overflow.hidden = !expanded;
 				toggle.textContent = expanded ? 'Show less' : `Show all ${total}`;
 			});
@@ -56,7 +56,7 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 )}
 
 <style>
-	.quick {
+	.jump {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -64,13 +64,13 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 		margin: -8px 0 28px;
 	}
 
-	.quick-label {
+	.jump-label {
 		font-size: 13px;
 		font-weight: 600;
 		color: #6b7280;
 	}
 
-	.quick a {
+	.jump a {
 		font-size: 13px;
 		color: #4338ca;
 		background: #eef2ff;
@@ -79,22 +79,22 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 		text-decoration: none;
 	}
 
-	.quick a:hover {
+	.jump a:hover {
 		text-decoration: underline;
 	}
 
-	.quick-overflow {
+	.jump-overflow {
 		display: inline-flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
 	}
 
-	.quick-overflow[hidden] {
+	.jump-overflow[hidden] {
 		display: none;
 	}
 
-	.quick-toggle {
+	.jump-toggle {
 		font-family: inherit;
 		font-size: 13px;
 		color: #4338ca;
@@ -105,7 +105,7 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 		cursor: pointer;
 	}
 
-	.quick-toggle:hover {
+	.jump-toggle:hover {
 		text-decoration: underline;
 	}
 </style>

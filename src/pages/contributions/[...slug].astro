@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ContributionsNav from '../../components/ContributionsNav.astro';
-import QuickFilters from '../../components/QuickFilters.astro';
+import JumpTo from '../../components/JumpTo.astro';
 import TimelineList from '../../components/TimelineList.astro';
 import GroupedList from '../../components/GroupedList.astro';
 import { loadContributions, languageSlug, anchorId } from '../../lib/contributions';
@@ -118,7 +118,7 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 		<ContributionsNav active={active} />
 
 		{quickFilters.length > 0 && (
-			<QuickFilters items={quickFilters} collapsible={collapsibleFilters} />
+			<JumpTo items={quickFilters} collapsible={collapsibleFilters} />
 		)}
 
 		{groups.length > 0 ? (
