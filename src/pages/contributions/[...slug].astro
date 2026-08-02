@@ -80,10 +80,25 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 	} else {
 		const slug = rest.join('/');
 		const language = data.languages.find((l) => languageSlug(l) === slug) ?? slug;
+		const langPrs = data.byLanguage[language] ?? [];
 		heading = language;
-		prs = data.byLanguage[language] ?? [];
-		count = `${prs.length} merged pull requests in ${language}`;
+		count = `${langPrs.length} merged pull requests in ${language}`;
 		back = { href: '/contributions/language', label: 'All languages' };
+		groups = Object.entries(
+			langPrs.reduce((acc, pr) => {
+				(acc[pr.repo] ??= []).push(pr);
+				return acc;
+			}, {} as Record<string, typeof langPrs>),
+		)
+			.map(([repo, prs]) => ({
+				id: `repo-${anchorId(repo)}`,
+				label: repo,
+				href: `/contributions/repository/${repo}`,
+				count: prs.length,
+				prs,
+			}))
+			.sort((a, b) => b.count - a.count);
+		quickFilters = groups.slice(0, 5).map(({ id, label }) => ({ label, href: `#${id}` }));
 	}
 }
 ---
