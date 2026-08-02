@@ -136,7 +136,7 @@ function formatDate(iso: string) {
 
 		<div class="toggle" role="group" aria-label="View">
 			<button data-view="timeline" aria-pressed="true">Timeline</button>
-			<button data-view="grouped" aria-pressed="false">By repository</button>
+			<button data-view="repository" aria-pressed="false">By repository</button>
 			<button data-view="language" aria-pressed="false">By language</button>
 		</div>
 
@@ -165,7 +165,7 @@ function formatDate(iso: string) {
 				</ol>
 			</section>
 
-			<section id="grouped-view" hidden>
+			<section id="repository-view" hidden>
 				{repoGroups.map((group) => (
 					<div class="group">
 						<h2>
@@ -214,7 +214,7 @@ function formatDate(iso: string) {
 	const buttons = document.querySelectorAll<HTMLButtonElement>('[data-view]');
 	const views = {
 		timeline: document.getElementById('timeline-view'),
-		grouped: document.getElementById('grouped-view'),
+		repository: document.getElementById('repository-view'),
 		language: document.getElementById('language-view'),
 	};
 
@@ -224,7 +224,7 @@ function formatDate(iso: string) {
 	}
 
 	const initial = new URLSearchParams(location.search).get('view');
-	if (initial === 'grouped' || initial === 'timeline' || initial === 'language') {
+	if (initial === 'repository' || initial === 'timeline' || initial === 'language') {
 		apply(initial);
 	} else {
 		apply('timeline');
