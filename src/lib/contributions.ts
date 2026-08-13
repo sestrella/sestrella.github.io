@@ -1,5 +1,3 @@
-import { execSync } from 'node:child_process';
-
 export type Contribution = {
 	repo: string;
 	number: number;
@@ -25,24 +23,17 @@ export type ContributionData = {
 const USERNAME = process.env.GITHUB_USERNAME ?? 'sestrella';
 const GRAPHQL_URL = 'https://api.github.com/graphql';
 
-const token =
-	process.env.GITHUB_TOKEN ??
-	(() => {
-		try {
-			return process.env['GH_TOKEN'] ?? execSync('gh auth token', { encoding: 'utf-8' }).trim();
-		} catch {
-			return undefined;
-		}
-	})();
+const token = process.env.GITHUB_TOKEN;
+
+if (!token) {
+	throw new Error('GITHUB_TOKEN is required. Set the GITHUB_TOKEN environment variable and retry.');
+}
 
 const headers: Record<string, string> = {
 	Accept: 'application/vnd.github+json',
 	'Content-Type': 'application/json',
+	Authorization: `Bearer ${token}`,
 };
-
-if (token) {
-	headers.Authorization = `Bearer ${token}`;
-}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
