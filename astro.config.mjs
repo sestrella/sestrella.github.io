@@ -6,5 +6,4 @@ export default defineConfig({
 	redirects: {
 		'/contributions': '/contributions/years',
 	},
-	trailingSlash: 'never',
 });
