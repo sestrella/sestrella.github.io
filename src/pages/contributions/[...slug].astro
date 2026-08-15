@@ -40,14 +40,14 @@ let back: { href: string; label: string } | null = null;
 if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 	const year = Number(segments[0]);
 	active = 'timeline';
-	heading = `Contributions in ${year}`;
+	heading = `OSS Contributions in ${year}`;
 	prs = data.byYear[year] ?? [];
 	count = `${prs.length} merged pull requests in ${year}`;
 	back = { href: '/contributions', label: 'All contributions' };
 } else if (head === 'repository') {
 	active = 'repository';
 	if (rest.length === 0) {
-		heading = 'Contributions by repository';
+		heading = 'OSS Contributions by repository';
 		count = `${data.mergedPrs.length} merged pull requests across ${data.repoCount} repositories`;
 		groups = data.repoGroups.map(({ repo, prs, count }) => ({
 			id: `repo-${anchorId(repo)}`,
@@ -69,7 +69,7 @@ if (segments.length === 1 && /^\d{4}$/.test(segments[0])) {
 } else if (head === 'language') {
 	active = 'language';
 	if (rest.length === 0) {
-		heading = 'Contributions by language';
+		heading = 'OSS Contributions by language';
 		count = `${data.mergedPrs.length} merged pull requests`;
 		groups = data.languageGroups.map(({ language, prs, count }) => ({
 			id: `lang-${anchorId(language)}`,
