@@ -20,7 +20,7 @@ const prs = data.byYear[year] ?? [];
 		active="timeline"
 		heading={`OSS Contributions in ${year}`}
 		count={`${prs.length} merged pull requests in ${year}`}
-		back={{ href: '/contributions', label: 'All contributions' }}
+		back={{ href: '/contributions/years', label: 'All contributions' }}
 		prs={prs}
 	/>
 </Layout>

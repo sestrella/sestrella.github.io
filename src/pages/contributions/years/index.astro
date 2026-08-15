@@ -1,9 +1,9 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import ContributionsNav from '../components/ContributionsNav.astro';
-import JumpTo from '../components/JumpTo.astro';
-import TimelineList from '../components/TimelineList.astro';
-import { loadContributions } from '../lib/contributions';
+import Layout from '../../../layouts/Layout.astro';
+import ContributionsNav from '../../../components/ContributionsNav.astro';
+import JumpTo from '../../../components/JumpTo.astro';
+import TimelineList from '../../../components/TimelineList.astro';
+import { loadContributions } from '../../../lib/contributions';
 
 const { mergedPrs, repoCount, years } = await loadContributions();
 const yearFilters = years.map(({ year }) => ({
