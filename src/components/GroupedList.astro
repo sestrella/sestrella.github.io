@@ -10,74 +10,19 @@ interface Props {
 const { prs, showRepo = true } = Astro.props;
 ---
 
-<ul class="pr-list">
+<ul class="m-0 list-none p-0">
 	{prs.map((pr) => (
-		<li>
-			<span class="line">
+		<li class="flex items-baseline justify-between gap-3 border-b border-gray-100 py-1.5 text-[15px] max-[560px]:flex-col max-[560px]:gap-0.5">
+			<span class="min-w-0 [overflow-wrap:anywhere]">
 				{showRepo && (
-					<a class="repo" href={contributionRepoUrl(pr.repo)}>
+					<a class="mr-2 font-semibold text-gray-900 no-underline hover:underline" href={contributionRepoUrl(pr.repo)}>
 						{pr.repo}
 					</a>
 				)}
-				<a href={pr.url}>{pr.title}</a>
-				<span class="detail"> #{pr.number}</span>
+				<a href={pr.url} class="text-indigo-600 no-underline hover:underline">{pr.title}</a>
+				<span class="text-gray-500"> #{pr.number}</span>
 			</span>
-			<time datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
+			<time class="shrink-0 text-[13px] text-gray-400" datetime={pr.mergedAt}>{formatDate(pr.mergedAt)}</time>
 		</li>
 	))}
 </ul>
-
-<style>
-	.pr-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-
-	.pr-list li {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 6px 0;
-		border-bottom: 1px solid #f3f4f6;
-		font-size: 15px;
-	}
-
-	.line {
-		min-width: 0;
-		overflow-wrap: anywhere;
-	}
-
-	.line a {
-		color: #4f46e5;
-		text-decoration: none;
-	}
-
-	.line a:hover {
-		text-decoration: underline;
-	}
-
-	.repo {
-		font-weight: 600;
-		color: #111827 !important;
-		margin-right: 8px;
-	}
-
-	.detail {
-		color: #6b7280;
-	}
-
-	time {
-		flex: 0 0 auto;
-		font-size: 13px;
-		color: #9ca3af;
-	}
-
-	@media (max-width: 560px) {
-		.pr-list li {
-			flex-direction: column;
-			gap: 2px;
-		}
-	}
-</style>

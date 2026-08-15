@@ -13,13 +13,13 @@ const yearFilters = years.map(({ year }) => ({
 ---
 
 <Layout title="OSS Contributions · Sebastián Estrella">
-	<main>
-		<h1>OSS Contributions</h1>
-		<p class="sub">
+	<main class="mx-auto max-w-[720px] p-6 font-sans text-gray-900">
+		<h1 class="mt-2 mb-1 text-[28px]">OSS Contributions</h1>
+		<p class="m-0 mb-6 text-gray-600">
 			Merged pull requests in other people's repositories, pulled from the GitHub API at build
 			time.
 		</p>
-		<p class="count">
+		<p class="m-0 mb-8 text-sm text-gray-500">
 			{mergedPrs.length} merged pull requests across {repoCount} repositories
 		</p>
 
@@ -27,73 +27,14 @@ const yearFilters = years.map(({ year }) => ({
 		<JumpTo items={yearFilters} />
 
 		{years.map(({ year, prs }) => (
-			<section class="year" id={`year-${year}`}>
-				<h2 class="year-header">
-					<a href={`/contributions/years/${year}`}>{year}</a>
+			<section class="mb-8 scroll-mt-4" id={`year-${year}`}>
+				<h2 class="relative m-0 mb-4 flex items-center gap-3 text-lg text-gray-900 after:flex-1 after:h-px after:bg-gray-200 after:content-['']">
+					<a href={`/contributions/years/${year}`} class="text-gray-900 no-underline hover:underline"
+						>{year}</a
+					>
 				</h2>
 				<TimelineList prs={prs} />
 			</section>
 		))}
 	</main>
 </Layout>
-
-<style>
-	:global(html) {
-		scroll-behavior: smooth;
-	}
-
-	main {
-		max-width: 720px;
-		margin: 0 auto;
-		padding: 24px;
-		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
-		color: #111827;
-	}
-
-	h1 {
-		font-size: 28px;
-		margin: 8px 0 4px;
-	}
-
-	.sub {
-		color: #4b5563;
-		margin: 0 0 24px;
-	}
-
-	.count {
-		font-size: 14px;
-		color: #6b7280;
-		margin: 0 0 32px;
-	}
-
-	.year {
-		margin-bottom: 32px;
-		scroll-margin-top: 16px;
-	}
-
-	.year-header {
-		font-size: 18px;
-		margin: 0 0 16px;
-		color: #111827;
-		position: relative;
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.year-header::after {
-		content: '';
-		flex: 1;
-		height: 1px;
-		background: #e5e7eb;
-	}
-
-	.year-header a {
-		color: #111827;
-		text-decoration: none;
-	}
-
-	.year-header a:hover {
-		text-decoration: underline;
-	}
-</style>

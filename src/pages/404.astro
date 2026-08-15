@@ -3,78 +3,24 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="404 | Page not found (probably stepped on)">
-	<main>
-		<h1>4 0 4</h1>
-		<p class="lede">
+	<main class="mx-auto max-w-xl px-6 py-8 text-center font-sans">
+		<h1 class="m-0 mb-2 text-5xl leading-[1.1] tracking-[0.02em] text-gray-900">4 0 4</h1>
+		<p class="m-0 mb-4 text-lg leading-[1.7] text-gray-900">
 			Well, this isn't great. We searched every brick, every stud, and even under the
 			rug — this page doesn't exist.
 		</p>
-		<ul class="reasons">
+		<ul class="mb-6 list-disc pl-5 text-left text-[15px] leading-[1.7] text-gray-700">
 			<li>You lost the instruction booklet (it's always the last step).</li>
 			<li>Someone stepped on this URL and it's now in excruciating pain.</li>
 			<li>The page went for a swim in the brick bin, never to be found again.</li>
 			<li>You simply snapped it apart with one of those little red plastic separators.</li>
 		</ul>
 		<p>
-			<a href="/" class="btn">Build your way back home</a>
+			<a
+				href="/"
+				class="mt-3 inline-block rounded bg-[#e3000b] px-5 py-2.5 font-semibold text-white no-underline shadow-[0_4px_0_#9a0007] transition-[transform,box-shadow] duration-[0.05s] ease-linear hover:translate-y-0.5 hover:shadow-[0_2px_0_#9a0007] active:translate-y-1 active:shadow-none"
+				>Build your way back home</a
+			>
 		</p>
 	</main>
 </Layout>
-
-<style>
-	main {
-		padding: 32px 24px;
-		max-width: 640px;
-		margin: 0 auto;
-		text-align: center;
-		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
-	}
-
-	h1 {
-		font-size: 48px;
-		line-height: 1.1;
-		color: #111827;
-		margin: 0 0 8px;
-		letter-spacing: 0.02em;
-	}
-
-	.lede {
-		font-size: 18px;
-		line-height: 1.7;
-		color: #111827;
-		margin: 0 0 16px;
-	}
-
-	.reasons {
-		text-align: left;
-		color: #374151;
-		line-height: 1.7;
-		font-size: 15px;
-		margin: 0 0 24px;
-		padding-left: 20px;
-	}
-
-	.btn {
-		display: inline-block;
-		margin-top: 12px;
-		color: #fff;
-		background: #e3000b;
-		text-decoration: none;
-		font-weight: 600;
-		padding: 10px 20px;
-		border-radius: 4px;
-		box-shadow: 0 4px 0 #9a0007;
-		transition: transform 0.05s ease, box-shadow 0.05s ease;
-	}
-
-	.btn:hover {
-		text-decoration: none;
-		transform: translateY(2px);
-		box-shadow: 0 2px 0 #9a0007;
-	}
-
-	.btn:active {
-		transform: translateY(4px);
-		box-shadow: 0 0 0 #9a0007;
-	}
-</style>

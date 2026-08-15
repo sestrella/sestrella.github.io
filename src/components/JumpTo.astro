@@ -12,23 +12,31 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 
 {items.length > 0 && (
 	<nav
-		class:list={['jump', { 'jump--collapsed': overflow.length > 0 }]}
+		class="-mt-2 mb-7 flex flex-wrap items-center gap-2"
 		data-jump
 		aria-label="Jump to"
 	>
-		<span class="jump-label">Jump to:</span>
+		<span class="text-[13px] font-semibold text-gray-500">Jump to:</span>
 		{shown.map((item) => (
-			<a href={item.href}>{item.label}</a>
+			<a
+				href={item.href}
+				class="rounded-full bg-indigo-50 px-3 py-1 text-[13px] text-indigo-700 no-underline hover:underline"
+				>{item.label}</a
+			>
 		))}
-		<span class="jump-overflow" data-jump-overflow hidden>
+		<span class="inline-flex flex-wrap items-center gap-2 [hidden]:hidden" data-jump-overflow hidden>
 			{overflow.map((item) => (
-				<a href={item.href}>{item.label}</a>
+				<a
+					href={item.href}
+					class="rounded-full bg-indigo-50 px-3 py-1 text-[13px] text-indigo-700 no-underline hover:underline"
+					>{item.label}</a
+				>
 			))}
 		</span>
 		{overflow.length > 0 && (
 			<button
 				type="button"
-				class="jump-toggle"
+				class="cursor-pointer rounded-full border border-dashed border-indigo-700 bg-indigo-50 px-3 py-1 font-sans text-[13px] text-indigo-700 hover:underline"
 				data-jump-toggle
 				data-total={items.length}
 				data-shown={shown.length}
@@ -54,58 +62,3 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 		}
 	</script>
 )}
-
-<style>
-	.jump {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px;
-		margin: -8px 0 28px;
-	}
-
-	.jump-label {
-		font-size: 13px;
-		font-weight: 600;
-		color: #6b7280;
-	}
-
-	.jump a {
-		font-size: 13px;
-		color: #4338ca;
-		background: #eef2ff;
-		border-radius: 999px;
-		padding: 4px 12px;
-		text-decoration: none;
-	}
-
-	.jump a:hover {
-		text-decoration: underline;
-	}
-
-	.jump-overflow {
-		display: inline-flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.jump-overflow[hidden] {
-		display: none;
-	}
-
-	.jump-toggle {
-		font-family: inherit;
-		font-size: 13px;
-		color: #4338ca;
-		background: #eef2ff;
-		border: 1px dashed #4338ca;
-		border-radius: 999px;
-		padding: 4px 12px;
-		cursor: pointer;
-	}
-
-	.jump-toggle:hover {
-		text-decoration: underline;
-	}
-</style>

@@ -1,9 +1,14 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-// https://astro.build/config
+import tailwindcss from '@tailwindcss/vite';
+
 export default defineConfig({
-	redirects: {
-		'/contributions': '/contributions/years',
+  redirects: {
+      '/contributions': '/contributions/years',
 	},
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 });

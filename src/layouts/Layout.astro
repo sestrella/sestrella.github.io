@@ -1,4 +1,6 @@
 ---
+import '../styles/global.css';
+
 interface Props {
 	title?: string;
 }
@@ -17,16 +19,19 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 		<title>{title}</title>
 	</head>
 	<body>
-		<header>
-			<nav>
-				<a href="/">sestrella</a>
-				<a href="/contributions/years">OSS Contributions</a>
+		<header class="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-6 py-4">
+			<nav class="flex items-center gap-5 font-sans">
+				<a href="/" class="font-medium text-gray-900 no-underline hover:underline">sestrella</a>
+				<a href="/contributions/years" class="font-medium text-gray-900 no-underline hover:underline"
+					>OSS Contributions</a
+				>
 			</nav>
-			<nav class="social" aria-label="Social media">
+			<nav class="flex items-center gap-2 font-sans" aria-label="Social media">
 				<a
 					href="https://www.linkedin.com/in/sestrella"
 					target="_blank"
 					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 font-medium text-gray-900 no-underline hover:bg-indigo-50 hover:text-indigo-600 hover:no-underline"
 				>
 					<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
 						<path
@@ -35,7 +40,12 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 					</svg>
 					LinkedIn
 				</a>
-				<a href="https://github.com/sestrella" target="_blank" rel="noopener noreferrer">
+				<a
+					href="https://github.com/sestrella"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 font-medium text-gray-900 no-underline hover:bg-indigo-50 hover:text-indigo-600 hover:no-underline"
+				>
 					<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
 						<path
 							d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
@@ -43,7 +53,12 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 					</svg>
 					GitHub
 				</a>
-				<a href="https://x.com/sestrella_h" target="_blank" rel="noopener noreferrer">
+				<a
+					href="https://x.com/sestrella_h"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 font-medium text-gray-900 no-underline hover:bg-indigo-50 hover:text-indigo-600 hover:no-underline"
+				>
 					<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
 						<path
 							d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
@@ -54,84 +69,8 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 			</nav>
 		</header>
 		<slot />
-		<footer>
-			<p>© {new Date().getFullYear()} Sebastián Estrella</p>
+		<footer class="mt-12 border-t border-gray-200 px-6 py-6 text-center font-sans text-sm text-gray-500">
+			<p class="m-0">© {new Date().getFullYear()} Sebastián Estrella</p>
 		</footer>
 	</body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-
-	header {
-		padding: 16px 24px;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 8px 20px;
-	}
-
-	nav {
-		display: flex;
-		align-items: center;
-		gap: 20px;
-		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
-	}
-
-	nav a {
-		color: #111827;
-		text-decoration: none;
-		font-weight: 500;
-	}
-
-	nav a:hover {
-		text-decoration: underline;
-	}
-
-	.social {
-		gap: 8px;
-	}
-
-	.social a {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		font-weight: 500;
-		color: #111827;
-		background: #f3f4f6;
-		border-radius: 999px;
-		padding: 6px 12px;
-	}
-
-	.social a:hover {
-		color: #4f46e5;
-		background: #eef2ff;
-		text-decoration: none;
-	}
-
-	.social svg {
-		width: 16px;
-		height: 16px;
-		fill: currentColor;
-	}
-
-	footer {
-		margin-top: 48px;
-		padding: 24px;
-		border-top: 1px solid #e5e7eb;
-		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
-		font-size: 14px;
-		color: #6b7280;
-		text-align: center;
-	}
-
-	footer p {
-		margin: 0;
-	}
-</style>
