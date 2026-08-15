@@ -1,0 +1,25 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import ContributionsPage from '../../../components/ContributionsPage.astro';
+import { loadContributions, languageSlug, anchorId } from '../../../lib/contributions';
+
+const data = await loadContributions();
+const groups = data.languageGroups.map(({ language, prs, count }) => ({
+	id: `lang-${anchorId(language)}`,
+	label: language,
+	href: `/contributions/languages/${languageSlug(language)}`,
+	count,
+	prs,
+}));
+const quickFilters = groups.map(({ id, label }) => ({ label, href: `#${id}` }));
+---
+
+<Layout title="OSS Contributions by language · Sebastián Estrella">
+	<ContributionsPage
+		active="languages"
+		heading="OSS Contributions by language"
+		count={`${data.mergedPrs.length} merged pull requests`}
+		groups={groups}
+		quickFilters={quickFilters}
+	/>
+</Layout>

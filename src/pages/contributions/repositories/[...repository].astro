@@ -1,0 +1,27 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import ContributionsPage from '../../../components/ContributionsPage.astro';
+import { loadContributions } from '../../../lib/contributions';
+
+export async function getStaticPaths() {
+	const data = await loadContributions();
+	return data.repoGroups.map(({ repo }) => ({
+		params: { repository: repo },
+	}));
+}
+
+const data = await loadContributions();
+const repo = Astro.params.repository ?? '';
+const prs = data.byRepo[repo] ?? [];
+---
+
+<Layout title={`${repo} · Sebastián Estrella`}>
+	<ContributionsPage
+		active="repositories"
+		heading={repo}
+		count={`${prs.length} merged pull requests`}
+		showRepo={false}
+		back={{ href: '/contributions/repositories', label: 'All repositories' }}
+		prs={prs}
+	/>
+</Layout>

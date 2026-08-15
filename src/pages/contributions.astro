@@ -29,7 +29,7 @@ const yearFilters = years.map(({ year }) => ({
 		{years.map(({ year, prs }) => (
 			<section class="year" id={`year-${year}`}>
 				<h2 class="year-header">
-					<a href={`/contributions/${year}`}>{year}</a>
+					<a href={`/contributions/years/${year}`}>{year}</a>
 				</h2>
 				<TimelineList prs={prs} />
 			</section>

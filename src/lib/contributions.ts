@@ -154,7 +154,7 @@ export function formatDate(iso: string) {
 }
 
 export function contributionRepoUrl(repo: string) {
-	return `/contributions/repository/${repo}`;
+	return `/contributions/repositories/${repo}`;
 }
 
 export function anchorId(input: string) {

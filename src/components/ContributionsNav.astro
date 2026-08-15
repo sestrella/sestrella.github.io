@@ -1,14 +1,14 @@
 ---
 interface Props {
-	active: 'timeline' | 'repository' | 'language';
+	active: 'timeline' | 'repositories' | 'languages';
 }
 
 const { active } = Astro.props;
 
 const items = [
 	{ id: 'timeline', label: 'Timeline', href: '/contributions' },
-	{ id: 'repository', label: 'By repository', href: '/contributions/repository' },
-	{ id: 'language', label: 'By language', href: '/contributions/language' },
+	{ id: 'repositories', label: 'By repository', href: '/contributions/repositories' },
+	{ id: 'languages', label: 'By language', href: '/contributions/languages' },
 ] as const;
 ---
 

@@ -1,0 +1,26 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import ContributionsPage from '../../../components/ContributionsPage.astro';
+import { loadContributions, anchorId } from '../../../lib/contributions';
+
+const data = await loadContributions();
+const groups = data.repoGroups.map(({ repo, prs, count }) => ({
+	id: `repo-${anchorId(repo)}`,
+	label: repo,
+	href: `/contributions/repositories/${repo}`,
+	count,
+	prs,
+}));
+const quickFilters = groups.map(({ id, label }) => ({ label, href: `#${id}` }));
+---
+
+<Layout title="OSS Contributions by repository · Sebastián Estrella">
+	<ContributionsPage
+		active="repositories"
+		heading="OSS Contributions by repository"
+		count={`${data.mergedPrs.length} merged pull requests across ${data.repoCount} repositories`}
+		groups={groups}
+		quickFilters={quickFilters}
+		collapsibleFilters
+	/>
+</Layout>

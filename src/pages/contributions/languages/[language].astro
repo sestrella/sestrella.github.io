@@ -1,0 +1,43 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import ContributionsPage from '../../../components/ContributionsPage.astro';
+import { loadContributions, languageSlug, anchorId } from '../../../lib/contributions';
+
+export async function getStaticPaths() {
+	const data = await loadContributions();
+	return data.languages.map((language) => ({
+		params: { language: languageSlug(language) },
+	}));
+}
+
+const data = await loadContributions();
+const slug = Astro.params.language ?? '';
+const language = data.languages.find((l) => languageSlug(l) === slug) ?? slug;
+const langPrs = data.byLanguage[language] ?? [];
+const groups = Object.entries(
+	langPrs.reduce((acc, pr) => {
+		(acc[pr.repo] ??= []).push(pr);
+		return acc;
+	}, {} as Record<string, typeof langPrs>),
+)
+	.map(([repo, prs]) => ({
+		id: `repo-${anchorId(repo)}`,
+		label: repo,
+		href: `/contributions/repositories/${repo}`,
+		count: prs.length,
+		prs,
+	}))
+	.sort((a, b) => b.count - a.count);
+const quickFilters = groups.map(({ id, label }) => ({ label, href: `#${id}` }));
+---
+
+<Layout title={`${language} · Sebastián Estrella`}>
+	<ContributionsPage
+		active="languages"
+		heading={language}
+		count={`${langPrs.length} merged pull requests in ${language}`}
+		back={{ href: '/contributions/languages', label: 'All languages' }}
+		groups={groups}
+		quickFilters={quickFilters}
+	/>
+</Layout>

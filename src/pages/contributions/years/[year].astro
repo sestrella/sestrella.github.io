@@ -1,0 +1,26 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import ContributionsPage from '../../../components/ContributionsPage.astro';
+import { loadContributions } from '../../../lib/contributions';
+
+export async function getStaticPaths() {
+	const data = await loadContributions();
+	return data.years.map(({ year }) => ({
+		params: { year: String(year) },
+	}));
+}
+
+const data = await loadContributions();
+const year = Number(Astro.params.year);
+const prs = data.byYear[year] ?? [];
+---
+
+<Layout title={`OSS Contributions in ${year} · Sebastián Estrella`}>
+	<ContributionsPage
+		active="timeline"
+		heading={`OSS Contributions in ${year}`}
+		count={`${prs.length} merged pull requests in ${year}`}
+		back={{ href: '/contributions', label: 'All contributions' }}
+		prs={prs}
+	/>
+</Layout>

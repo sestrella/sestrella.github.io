@@ -1,0 +1,152 @@
+---
+import type { Contribution } from '../lib/contributions';
+import ContributionsNav from './ContributionsNav.astro';
+import JumpTo from './JumpTo.astro';
+import TimelineList from './TimelineList.astro';
+import GroupedList from './GroupedList.astro';
+
+export type Group = {
+	id: string;
+	label: string;
+	href: string;
+	count: number;
+	prs: Contribution[];
+};
+
+interface Props {
+	active: 'timeline' | 'repositories' | 'languages';
+	heading: string;
+	count: string;
+	back?: { href: string; label: string } | null;
+	groups?: Group[];
+	quickFilters?: { label: string; href: string }[];
+	collapsibleFilters?: boolean;
+	prs?: Contribution[];
+	showRepo?: boolean;
+}
+
+const {
+	active,
+	heading,
+	count,
+	back = null,
+	groups = [],
+	quickFilters = [],
+	collapsibleFilters = false,
+	prs = [],
+	showRepo = true,
+} = Astro.props;
+---
+
+<main>
+	{back && (
+		<p class="back">
+			<a href={back.href}>← {back.label}</a>
+		</p>
+	)}
+	<h1>{heading}</h1>
+	<p class="count">{count}</p>
+
+	<ContributionsNav active={active} />
+
+	{quickFilters.length > 0 && (
+		<JumpTo items={quickFilters} collapsible={collapsibleFilters} />
+	)}
+
+	{groups.length > 0 ? (
+		groups.map((group) => (
+			<section class="group" id={group.id}>
+				<h2>
+					<a href={group.href}>{group.label}</a>
+					<span class="group-count">{group.count}</span>
+				</h2>
+				<GroupedList prs={group.prs} showRepo={false} />
+			</section>
+		))
+	) : prs.length > 0 ? (
+		active === 'timeline' ? (
+			<TimelineList prs={prs} />
+		) : (
+			<GroupedList prs={prs} showRepo={showRepo} />
+		)
+	) : (
+		<p class="empty">No contributions found.</p>
+	)}
+</main>
+
+<style>
+	:global(html) {
+		scroll-behavior: smooth;
+	}
+
+	main {
+		max-width: 720px;
+		margin: 0 auto;
+		padding: 24px;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+		color: #111827;
+	}
+
+	.back {
+		margin: 0 0 8px;
+	}
+
+	.back a {
+		color: #6b7280;
+		text-decoration: none;
+		font-size: 14px;
+	}
+
+	.back a:hover {
+		text-decoration: underline;
+	}
+
+	h1 {
+		font-size: 28px;
+		margin: 8px 0 4px;
+		overflow-wrap: anywhere;
+	}
+
+	.count {
+		font-size: 14px;
+		color: #6b7280;
+		margin: 0 0 32px;
+	}
+
+	.group {
+		margin-bottom: 28px;
+		scroll-margin-top: 16px;
+	}
+
+	.group h2 {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 16px;
+		margin: 0 0 8px;
+	}
+
+	.group h2 a {
+		color: #111827;
+		text-decoration: none;
+		overflow-wrap: anywhere;
+	}
+
+	.group h2 a:hover {
+		text-decoration: underline;
+	}
+
+	.group-count {
+		flex: 0 0 auto;
+		font-size: 12px;
+		font-weight: 600;
+		color: #4338ca;
+		background: #eef2ff;
+		border-radius: 999px;
+		padding: 2px 8px;
+	}
+
+	.empty {
+		color: #6b7280;
+	}
+</style>
