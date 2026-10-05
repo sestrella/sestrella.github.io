@@ -46,33 +46,8 @@ const { prs } = Astro.props;
 		position: relative;
 	}
 
-	.timeline::before {
-		content: '';
-		position: absolute;
-		left: 11px;
-		top: 4px;
-		bottom: 4px;
-		width: 2px;
-		background: #e5e7eb;
-	}
-
 	.timeline li {
-		position: relative;
-		display: flex;
-		gap: 16px;
 		padding-bottom: 28px;
-	}
-
-	.timeline li::before {
-		content: '';
-		flex: 0 0 auto;
-		width: 12px;
-		height: 12px;
-		margin-top: 4px;
-		border-radius: 50%;
-		background: #4f46e5;
-		border: 3px solid #fff;
-		box-shadow: 0 0 0 1px #e5e7eb;
 	}
 
 	.body {
@@ -143,11 +118,5 @@ const { prs } = Astro.props;
 	time {
 		font-size: 13px;
 		color: #9ca3af;
-	}
-
-	@media (max-width: 560px) {
-		.timeline li {
-			flex-wrap: wrap;
-		}
 	}
 </style>
