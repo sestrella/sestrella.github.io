@@ -22,7 +22,9 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 				<a href="/">sestrella</a>
 				<a href="/contributions/years">OSS Contributions</a>
 			</nav>
-			<nav class="social" aria-label="Social media">
+			<details class="social" open>
+				<summary>Social</summary>
+				<nav class="social-links" aria-label="Social media">
 				<a
 					href="https://www.linkedin.com/in/sestrella"
 					target="_blank"
@@ -51,7 +53,8 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 					</svg>
 					X
 				</a>
-			</nav>
+				</nav>
+			</details>
 		</header>
 		<slot />
 		<footer>
@@ -59,6 +62,18 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 		</footer>
 	</body>
 </html>
+
+<script>
+	const socialDisclosure = document.querySelector<HTMLDetailsElement>('.social');
+	const narrowViewport = window.matchMedia('(max-width: 700px)');
+
+	function syncSocialDisclosure() {
+		if (socialDisclosure) socialDisclosure.open = !narrowViewport.matches;
+	}
+
+	syncSocialDisclosure();
+	narrowViewport.addEventListener('change', syncSocialDisclosure);
+</script>
 
 <style>
 	html,
@@ -95,10 +110,29 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 	}
 
 	.social {
+		position: relative;
+	}
+
+	.social summary {
+		cursor: pointer;
+		list-style: none;
+		font-family: Inter, [PERSON_NAME], 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+		font-weight: 500;
+		color: #111827;
+		background: #f3f4f6;
+		border-radius: 999px;
+		padding: 6px 12px;
+	}
+
+	.social summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.social-links {
 		gap: 8px;
 	}
 
-	.social a {
+	.social-links a {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -109,16 +143,43 @@ const { title = 'Sebastián Estrella' } = Astro.props;
 		padding: 6px 12px;
 	}
 
-	.social a:hover {
+	.social-links a:hover,
+	.social summary:hover {
 		color: #4f46e5;
 		background: #eef2ff;
 		text-decoration: none;
 	}
 
-	.social svg {
+	.social-links svg {
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
+	}
+
+	@media (max-width: 700px) {
+		.social[open] .social-links {
+			position: absolute;
+			top: calc(100% + 8px);
+			right: 0;
+			z-index: 1;
+			flex-direction: column;
+			align-items: stretch;
+			padding: 8px;
+			background: white;
+			border: 1px solid #e5e7eb;
+			border-radius: 12px;
+			box-shadow: 0 8px 24px rgb(17 24 39 / 12%);
+		}
+	}
+
+	@media (min-width: 701px) {
+		.social summary {
+			display: none;
+		}
+
+		.social-links {
+			display: flex;
+		}
 	}
 
 	footer {
