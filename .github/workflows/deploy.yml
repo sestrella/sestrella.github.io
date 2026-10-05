@@ -13,6 +13,9 @@ on:
       - public/**
       - src/**
       - tsconfig.json
+  schedule:
+    # Cron runs in UTC: 13:00 UTC = 08:00 in Ecuador (UTC-5).
+    - cron: "0 13 * * *"
 
 permissions:
   contents: read
