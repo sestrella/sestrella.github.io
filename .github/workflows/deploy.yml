@@ -36,6 +36,8 @@ jobs:
         uses: pnpm/setup@v2
         with:
           cache: true
+      - name: Test
+        run: pnpm test
       - name: Build
         run: pnpm build
         env:
