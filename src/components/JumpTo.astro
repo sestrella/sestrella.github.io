@@ -1,21 +1,16 @@
 ---
 interface Props {
 	items: { label: string; href: string }[];
-	collapsible?: boolean;
 	visibleCount?: number;
 }
 
-const { items, collapsible = false, visibleCount = 10 } = Astro.props;
-const shown = collapsible ? items.slice(0, visibleCount) : items;
-const overflow = collapsible ? items.slice(visibleCount) : [];
+const { items, visibleCount = 5 } = Astro.props;
+const shown = items.slice(0, visibleCount);
+const overflow = items.slice(visibleCount);
 ---
 
 {items.length > 0 && (
-	<nav
-		class:list={['jump', { 'jump--collapsed': overflow.length > 0 }]}
-		data-jump
-		aria-label="Jump to"
-	>
+	<nav class="jump" data-jump aria-label="Jump to">
 		<span class="jump-label">Jump to:</span>
 		{shown.map((item) => (
 			<a href={item.href}>{item.label}</a>
@@ -31,7 +26,7 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 				class="jump-toggle"
 				data-jump-toggle
 				data-total={items.length}
-				data-shown={shown.length}
+				aria-expanded="false"
 			>
 				Show all {items.length}
 			</button>
@@ -41,14 +36,15 @@ const overflow = collapsible ? items.slice(visibleCount) : [];
 
 {overflow.length > 0 && (
 	<script>
-		const nav = document.querySelector('[data-jump]');
-		const toggle = nav?.querySelector('[data-jump-toggle]');
-		const overflow = nav?.querySelector('[data-jump-overflow]');
-		if (toggle && overflow) {
+		for (const nav of document.querySelectorAll<HTMLElement>('[data-jump]')) {
+			const toggle = nav.querySelector<HTMLButtonElement>('[data-jump-toggle]');
+			const overflow = nav.querySelector<HTMLElement>('[data-jump-overflow]');
+			if (!toggle || !overflow) continue;
 			const total = Number(toggle.dataset.total);
 			toggle.addEventListener('click', () => {
-				const expanded = nav!.classList.toggle('jump--expanded');
+				const expanded = overflow.hidden;
 				overflow.hidden = !expanded;
+				toggle.setAttribute('aria-expanded', String(expanded));
 				toggle.textContent = expanded ? 'Show less' : `Show all ${total}`;
 			});
 		}
