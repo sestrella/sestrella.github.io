@@ -10,9 +10,13 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest run"
   },
   "dependencies": {
     "astro": "^7.1.6"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.3"
   }
 }
